@@ -4,13 +4,23 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+**Core user actions.** After reading the scenario, I picked three things a user has to be able to do:
+
+1. **Add a pet and owner info.** The user enters their name, how much time they have today, and their pet's basic details (name, species, age).
+2. **Add and manage care tasks.** The user adds tasks for a pet, such as a walk, feeding, meds or grooming. Each task has a duration and a priority, and can have a preferred time and a frequency (daily or weekly). Tasks can be marked complete or removed.
+3. **Generate and view today's plan.** The user asks for a daily schedule. The app picks the tasks that fit in the available time, puts them in order with start times, and explains why each task was included or left out.
+
+**UML design.** The diagram (`diagrams/uml.mmd`) has four classes. An Owner has many Pets, each Pet has many Tasks, and a Scheduler takes an Owner and builds the plan from all of that owner's pets' tasks.
+
+- **Task** (dataclass) holds one care activity: title, category, duration, priority, frequency, optional preferred time, and whether it's done. It can mark itself complete, turn its priority into a number for sorting, and say whether it's due today.
+- **Pet** (dataclass) holds the pet's details and its list of tasks. It can add or remove tasks and return the ones still pending.
+- **Owner** (dataclass) holds the owner's name, daily time budget, day start time, preferences and pets. It can add, remove or find pets, and collect every task across all of them.
+- **Scheduler** holds the scheduling logic. It gathers due tasks, sorts them by priority, fits them into the owner's time budget with start times, flags overlapping time slots, and explains the plan. I kept this logic out of Owner and Pet so the data classes stay simple and the scheduling rules live in one place I can test.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+- Yes. When I asked my AI assistant to review the skeleton, it pointed out that `Task.is_due_today()` couldn't work for weekly tasks: a task only stored `completed: bool`, so there was no way to know *when* it was last done. I added a `last_completed: date` field to `Task`, and `mark_complete()` will record today's date. That gives the scheduler what it needs to decide whether a weekly task is due again.
+- Other points from the review that I'm keeping in mind for implementation: `remove_task(title)` gets ambiguous if two tasks share a title, and a `Task` doesn't know which pet it belongs to. That's why the Scheduler passes `(Pet, Task)` pairs around instead of bare tasks.
 
 ---
 
