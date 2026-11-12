@@ -20,7 +20,9 @@
 **b. Design changes**
 
 - Yes. When I asked my AI assistant to review the skeleton, it pointed out that `Task.is_due_today()` couldn't work for weekly tasks: a task only stored `completed: bool`, so there was no way to know *when* it was last done. I added a `last_completed: date` field to `Task`, and `mark_complete()` will record today's date. That gives the scheduler what it needs to decide whether a weekly task is due again.
-- Other points from the review that I'm keeping in mind for implementation: `remove_task(title)` gets ambiguous if two tasks share a title, and a `Task` doesn't know which pet it belongs to. That's why the Scheduler passes `(Pet, Task)` pairs around instead of bare tasks.
+- The review also noted that a `Task` didn't know which pet it belonged to, so my skeleton had the Scheduler passing `(Pet, Task)` pairs around. During implementation I changed this: `Pet.add_task()` now sets a `pet_name` field on the task. Now the Scheduler can get everything through one call, `Owner.get_all_tasks()`, and still show which pet each task is for. This makes the Scheduler work across all pets instead of one at a time.
+- I renamed `title` to `description` and `preferred_time` to `time` to match the project spec's wording for a Task.
+- One thing I left as it is: `remove_task(description)` removes only the first match, so tasks with the same description are still ambiguous.
 
 ---
 

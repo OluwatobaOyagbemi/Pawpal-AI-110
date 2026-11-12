@@ -1,5 +1,5 @@
 classDiagram
-    %% PawPal+ initial design (draft). Update in Phase 6 to match the final implementation.
+    %% PawPal+ design. Update in Phase 6 to match the final implementation.
 
     class Owner {
         +str name
@@ -8,7 +8,7 @@ classDiagram
         +list~str~ preferences
         +list~Pet~ pets
         +add_pet(pet: Pet) None
-        +remove_pet(pet_name: str) None
+        +remove_pet(pet_name: str) bool
         +get_pet(pet_name: str) Pet
         +get_all_tasks() list~Task~
     }
@@ -20,19 +20,20 @@ classDiagram
         +str notes
         +list~Task~ tasks
         +add_task(task: Task) None
-        +remove_task(title: str) None
+        +remove_task(description: str) bool
         +get_pending_tasks() list~Task~
     }
 
     class Task {
-        +str title
-        +str category
+        +str description
         +int duration_minutes
         +str priority
         +str frequency
-        +str preferred_time
+        +str time
+        +str category
         +bool completed
         +date last_completed
+        +str pet_name
         +mark_complete() None
         +priority_rank() int
         +is_due_today() bool
@@ -40,8 +41,9 @@ classDiagram
 
     class Scheduler {
         +Owner owner
+        +date today
         +list~tuple~ plan
-        +list~Task~ skipped
+        +list~tuple~ skipped
         +collect_tasks() list~Task~
         +sort_by_priority(tasks: list~Task~) list~Task~
         +generate_plan() list~tuple~
@@ -51,5 +53,5 @@ classDiagram
 
     Owner "1" o-- "0..*" Pet : has
     Pet "1" *-- "0..*" Task : needs
-    Scheduler --> Owner : plans for
+    Scheduler --> Owner : reads tasks via get_all_tasks()
     Scheduler ..> Task : schedules
