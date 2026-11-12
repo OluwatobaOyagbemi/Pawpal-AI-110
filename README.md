@@ -119,24 +119,46 @@ Not yet completed (new copies are due later):
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the tests from the project folder, with the virtual environment active:
 
-# Run with coverage:
-pytest --cov
+```bash
+python -m pytest            # run the full suite
+python -m pytest --cov      # same, plus a coverage report
 ```
 
-Sample test output:
+The suite is in `tests/test_pawpal.py` and has 42 tests. Each `Scheduler` in the tests gets a fixed date, so the results don't depend on the day you run them.
+
+| Area | What the tests check |
+|------|----------------------|
+| Sorting | `sort_by_time()` returns tasks in chronological order, sorts `"8:00"` correctly as `08:00`, puts flexible tasks last, keeps insertion order for same-time tasks, and doesn't change the original list. `sort_by_priority()` breaks priority ties by time and then duration. |
+| Filtering | `filter_tasks()` filters by pet, by completion status, or both. With no filters it returns every task, and with an unknown pet it returns an empty list. |
+| Recurrence | Completing a daily task creates a new copy due the next day, and a weekly task's copy is due 7 days later. Dates roll over correctly at month ends, year ends and leap days. One-time tasks don't repeat, completing a task twice doesn't create duplicates, and overdue tasks stay due. |
+| Conflict detection | Duplicate times are flagged for the same pet and across different pets. Partial overlaps are flagged, three same-time tasks produce all three pairs, back-to-back tasks are not conflicts, and completed tasks stop counting. |
+| Plan generation | Timed tasks stay at their preferred time and flexible tasks fill the gaps. Overlapping tasks are moved so no two planned tasks run at once. Low-priority tasks are skipped when time runs out, a task that exactly fills the budget still fits, and completed or future tasks are left out. |
+| Edge cases | An owner with no pets, a pet with no tasks, zero available minutes, invalid task values (they raise `ValueError`), duplicate pet names, and removing pets and tasks. |
+
+Output of `python -m pytest`:
 
 ```
 ============================= test session starts ==============================
-collected 9 items
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/USER/Pawpal-AI-110
+plugins: cov-7.1.0
+collected 42 items
 
-tests/test_pawpal.py .........                                                [100%]
+tests/test_pawpal.py ..........................................          [100%]
 
-============================== 9 passed in 0.01s ===============================
+============================== 42 passed in 0.02s ==============================
 ```
+
+The suite covers 100% of `pawpal_system.py` (`python -m pytest --cov`).
+
+**Confidence level: ⭐⭐⭐⭐☆ (4/5)**
+
+Every scheduling rule, including the edge cases above, has a passing test, and every line of the logic layer runs during the suite. I'm not giving it 5 stars for three reasons:
+- The Streamlit UI isn't part of the automated suite. I only checked it by hand.
+- A task that runs past midnight (for example 23:50 for 30 minutes) would get a start time like `24:20`. Nothing prevents or handles this yet.
+- Picking tasks by priority is greedy, so it doesn't always fill the available time as fully as possible. This is a deliberate choice, explained in `reflection.md` section 2b.
 
 ## 📐 Smarter Scheduling
 
