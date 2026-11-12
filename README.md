@@ -42,16 +42,37 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
+## 🧩 Implementation Summary
+
+The logic lives in `pawpal_system.py` in four classes:
+
+- **`Task`** (dataclass): one care activity with a description, duration, priority (low/medium/high), frequency (daily/weekly/once), an optional preferred time, and completion status. `mark_complete()` records the date, and `is_due_today()` uses it to decide whether a daily or weekly task is due again.
+- **`Pet`** (dataclass): a pet's details and its list of tasks. `add_task()` tags each task with the pet's name so the schedule can show who it's for.
+- **`Owner`** (dataclass): the owner's daily time budget, day start time, and pets. `get_all_tasks()` returns every pet's tasks in one list.
+- **`Scheduler`**: the planner. It reads tasks only through `Owner.get_all_tasks()`, so it plans across all pets at once. It keeps the tasks due today, picks the highest-priority ones that fit the time budget, places tasks with a preferred time at that time, fills gaps with flexible tasks, warns about overlapping time slots, and explains each choice.
+
+`main.py` is a terminal demo that builds an owner with two pets and prints today's schedule.
+
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+Output of `python main.py`:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Today's Schedule for Jordan
+80 of 90 minutes planned, starting at 07:30
+------------------------------------------------------------------------------
+Time   Pet     Task             Min  Priority Why
+------------------------------------------------------------------------------
+07:30  Mochi   Breakfast         10  high     fits before 08:00
+07:40  Luna    Litter box        10  medium   fits before 08:00
+08:00  Mochi   Morning walk      30  high     at preferred time 08:00
+08:30  Luna    Give meds          5  high     preferred 08:15 but moved to avoid overlap
+09:30  Mochi   Puzzle toy        25  medium   at preferred time 09:30
+------------------------------------------------------------------------------
+Skipped:
+  - Brush coat (Luna): needs 20 min, only 10 min left
+Conflicts:
+  ! 'Morning walk' (Mochi, 08:00, 30 min) overlaps 'Give meds' (Luna, 08:15)
 ```
 
 ## 🧪 Testing PawPal+
@@ -67,7 +88,12 @@ pytest --cov
 Sample test output:
 
 ```
-# Paste your pytest output here
+============================= test session starts ==============================
+collected 2 items
+
+tests/test_pawpal.py ..                                                  [100%]
+
+============================== 2 passed in 0.00s ===============================
 ```
 
 ## 📐 Smarter Scheduling

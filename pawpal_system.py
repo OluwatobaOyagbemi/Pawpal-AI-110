@@ -42,6 +42,7 @@ class Task:
     pet_name: str = ""                 # set by Pet.add_task
 
     def __post_init__(self) -> None:
+        """Validate duration, priority, frequency, and time format on creation."""
         if self.duration_minutes <= 0:
             raise ValueError("duration_minutes must be positive")
         if self.priority not in PRIORITY_RANK:
@@ -179,6 +180,7 @@ class Scheduler:
         cursor = to_minutes(self.owner.day_start)
 
         def place(task: Task, start: int, reason: str) -> int:
+            """Add a task to the plan at `start` and return the minute it ends."""
             self.plan.append((to_hhmm(start), task, reason))
             return start + task.duration_minutes
 

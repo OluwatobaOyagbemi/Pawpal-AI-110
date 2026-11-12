@@ -44,13 +44,15 @@
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+- I used Claude Code in VS Code at every stage so far. It drafted the Mermaid UML from my four classes and generated the dataclass skeleton. After it reviewed the skeleton for missing relationships, it wrote the full implementation, the `main.py` demo, the first two tests, and the docstrings.
+- The most helpful prompts were review questions about my own code, like "does this skeleton have missing relationships or logic bottlenecks?" and "how should the Scheduler retrieve all tasks from the Owner's pets?" They found real gaps: weekly tasks had no completion date, and tasks didn't know which pet they belonged to. A general "write the code" prompt wouldn't have caught those.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+- **What AI suggested:** In the skeleton, the Scheduler passed `(Pet, Task)` pairs around so it could tell which pet each task belonged to. The assignment says the Scheduler must read from the Owner's `get_all_tasks()` method, which returns plain tasks. So I changed the design: `Pet.add_task()` stamps each task with a `pet_name`, and the Scheduler reads only from `get_all_tasks()`.
+- **What I accepted:** I kept the AI's two-step scheduling approach, which first picks tasks by priority within the time budget and then places them by time. I also kept its rename of `title` to `description` to match the spec.
+- **What I rejected or left for later:** The review pointed out that `remove_task()` is ambiguous when two tasks share a description. I left that alone for now because it doesn't affect scheduling.
+- **How I verified it:** I ran `main.py` with two pets and six tasks and checked each line by hand. Every task fit inside the 90-minute budget. The 08:15 meds task moved to 08:30 because the walk was still running, and the conflict warning flagged that overlap. The low-priority weekly brushing was skipped because there wasn't enough time left. I also ran `python -m pytest`, and both the task-completion and task-addition tests passed.
 
 ---
 
