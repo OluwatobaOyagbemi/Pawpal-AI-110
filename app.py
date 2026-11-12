@@ -110,7 +110,8 @@ else:
                     "Priority": t.priority,
                     "Frequency": t.frequency,
                     "Time": t.time or "flexible",
-                    "Due today": "yes" if t.is_due_today() else "done",
+                    "Status": "done" if t.completed
+                    else "due" if t.is_due_today() else f"next due {t.due_date}",
                 }
                 for t in all_tasks
             ]

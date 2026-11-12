@@ -34,9 +34,11 @@ classDiagram
         +bool completed
         +date last_completed
         +str pet_name
+        +date due_date
         +mark_complete() None
         +priority_rank() int
         +is_due_today() bool
+        +next_occurrence() Task
     }
 
     class Scheduler {
@@ -45,6 +47,9 @@ classDiagram
         +list~tuple~ plan
         +list~tuple~ skipped
         +collect_tasks() list~Task~
+        +sort_by_time(tasks) list~Task~
+        +filter_tasks(pet_name, completed, tasks) list~Task~
+        +mark_task_complete(task: Task) Task
         +sort_by_priority(tasks: list~Task~) list~Task~
         +generate_plan() list~tuple~
         +detect_conflicts() list~str~

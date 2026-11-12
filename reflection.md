@@ -35,8 +35,8 @@
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+- **Greedy, priority-first selection.** The scheduler goes through tasks from highest to lowest priority and keeps each one that still fits in the remaining minutes. It never looks for the combination of tasks that fills the most time. For example, with 30 minutes left and a 25-minute medium task ahead of two 15-minute low tasks, it takes the 25-minute task and skips both low ones, even though the two low tasks would use the full 30 minutes. This is reasonable for pet care because priority matters more than a full schedule. A high-priority task like meds should never lose its spot to two small low-priority ones, and the owner can predict the result without understanding a packing algorithm.
+- **Readability over cleverness in conflict detection.** When I asked my AI assistant how to simplify `detect_conflicts()`, it suggested `itertools.combinations(timed, 2)` with no nested loop. That version is shorter, but it compares every pair of tasks. My version sorts by start time and stops the inner loop at the first task that starts after the current one ends. I kept my version because the early `break` makes the overlap rule visible ("sorted, so nothing later can overlap"). With only a few tasks a day, speed isn't the reason.
 
 ---
 
