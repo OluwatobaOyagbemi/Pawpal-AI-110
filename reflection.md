@@ -60,13 +60,15 @@
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+- The suite in `tests/test_pawpal.py` has 42 tests, grouped by feature. For sorting, I checked that `sort_by_time()` returns tasks in time order, reads `"8:00"` as 08:00, puts flexible tasks last, and keeps the original order when two tasks share a time. For recurrence, completing a daily task adds a copy due the next day and a weekly one is due seven days later. The dates also roll over correctly at the end of a month, the end of a year, and on a leap day. One-time tasks don't repeat, and completing the same task twice doesn't make two copies. For conflicts, two tasks at the same time get flagged whether they belong to one pet or two, partial overlaps get flagged, and back-to-back tasks don't.
+- I also tested the plan itself. Timed tasks keep their preferred time, flexible tasks fill the gaps, nothing in the final plan overlaps, and low-priority tasks get skipped when time runs out. Then I covered the empty cases, like an owner with no pets, a pet with no tasks, and zero minutes available.
+- These are the parts a pet owner would notice going wrong. A daily meds task that never comes back, or that shows up twice, is the kind of mistake that would make someone stop trusting the app. Date math at month and year ends is easy to get wrong, so I tested `timedelta` on real boundary dates. Every Scheduler in the tests gets a fixed date, so the results are the same whatever day I run them.
+- One test failed on the first run, and the mistake was in the test. I expected the Puzzle toy to be skipped, but all four tasks were medium priority, so the scheduler chose the timed tasks first and skipped the flexible Litter box instead. I fixed the expected result and wrote the reason in the test's docstring.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+- I'd give it 4 out of 5. All 42 tests pass, and together they run every line of `pawpal_system.py`. I'm holding back one star because the Streamlit app isn't in the automated tests (I checked it by hand in the browser), and because of a gap I already know about: a task that runs past midnight, like 23:50 for 30 minutes, gets a start time of `24:20`.
+- With more time I'd test tasks that cross midnight, a preferred time earlier than the owner's day start, and two tasks for the same pet with the same description, since `remove_task()` only removes the first match. I'd also add tests for the Streamlit app using Streamlit's `AppTest`, so marking a task complete and filtering get checked automatically.
 
 ---
 
