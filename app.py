@@ -52,9 +52,10 @@ with st.form("add_pet", clear_on_submit=True):
                 st.error(str(err))
 
 if owner.pets:
-    st.table(
+    st.dataframe(
         [{"Name": p.name, "Species": p.species, "Age": p.age, "Tasks": len(p.tasks)}
-         for p in owner.pets]
+         for p in owner.pets],
+        hide_index=True, width="stretch",
     )
 else:
     st.info("No pets yet. Add one above.")
@@ -112,7 +113,7 @@ else:
             ]
             pick = st.selectbox("Mark a task complete", labels)
         with col2:
-            if st.button("Complete", use_container_width=True):
+            if st.button("Complete", width="stretch"):
                 done = due_now[labels.index(pick)]
                 next_task = scheduler.mark_task_complete(done)
                 st.session_state.flash = (
@@ -140,7 +141,7 @@ else:
     shown = scheduler.sort_by_time(shown) if sort_by == "Time" else scheduler.sort_by_priority(shown)
 
     if shown:
-        st.table(
+        st.dataframe(
             [
                 {
                     "Time": t.time or "flexible",
@@ -153,16 +154,24 @@ else:
                     else "due" if t.is_due_today() else f"next due {t.due_date:%a %b %d}",
                 }
                 for t in shown
-            ]
+            ],
+            hide_index=True, width="stretch",
         )
     elif owner.get_all_tasks():
         st.info("No tasks match these filters.")
     else:
         st.info("No tasks yet. Add one above.")
 
-    # --- Conflicts: shown live, so the owner sees clashes before planning ---
-    for warning in scheduler.detect_conflicts():
-        st.warning(f"⚠️ Time conflict: {warning}. The schedule will move the later task.")
+    # --- Conflicts: shown live, in one block, with what happens and how to fix it ---
+    conflicts = scheduler.detect_conflicts()
+    if conflicts:
+        count = f"{len(conflicts)} time conflict" + ("s" if len(conflicts) > 1 else "")
+        st.warning(
+            f"**⚠️ {count}.** You can't do two things at once, so the schedule will start "
+            "the later task when the earlier one ends. To keep both at their preferred "
+            "times, change one task's time.\n\n"
+            + "\n".join(f"- {c}" for c in conflicts)
+        )
 
 st.divider()
 
@@ -176,14 +185,25 @@ if st.button("Generate schedule", type="primary"):
         st.info("Nothing to schedule. Add tasks, or check your available minutes.")
     else:
         used = sum(task.duration_minutes for _, task, _ in plan)
-        st.caption(f"{used} of {owner.available_minutes} minutes planned, starting at {owner.day_start}.")
-        st.table(
+        moved = sum("moved" in reason for _, _, reason in plan)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Tasks planned", len(plan))
+        c2.metric("Minutes used", f"{used} / {owner.available_minutes}")
+        c3.metric("Moved for conflicts", moved)
+        st.dataframe(
             [
                 {"Time": start, "Pet": task.pet_name, "Task": task.description,
                  "Min": task.duration_minutes, "Priority": task.priority, "Why": reason}
                 for start, task, reason in plan
-            ]
+            ],
+            hide_index=True, width="stretch",
         )
+        if not scheduler.skipped:
+            st.success("Everything due today fits in your available time.")
 
-    for task, reason in scheduler.skipped:
-        st.warning(f"Skipped **{task.description}** ({task.pet_name}): {reason}")
+    if scheduler.skipped:
+        st.warning(
+            f"**{len(scheduler.skipped)} task(s) didn't fit** in {owner.available_minutes} minutes. "
+            "Add more time or lower another task's priority to fit them in.\n\n"
+            + "\n".join(f"- {t.description} ({t.pet_name}): {r}" for t, r in scheduler.skipped)
+        )

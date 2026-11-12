@@ -30,8 +30,8 @@
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+- The scheduler works with five constraints. The owner's available minutes are a hard limit, and a task that doesn't fit is skipped. Priority decides which tasks get the minutes first. A preferred time places a task at that time if possible. The day start is where flexible tasks begin. The due date leaves out tasks that are done or not due until later. Because one owner does every task, tasks for different pets also can't overlap.
+- I put priority first because missing a pet's meds is worse than missing a brushing, and a schedule that's full but skips the meds is a bad schedule. The time budget comes next because the owner can't make more time. Preferred times matter least, so the scheduler moves a task to the next free slot instead of dropping it, and tells the owner it moved. `Owner` also has a `preferences` list, but the scheduler doesn't use it yet.
 
 **b. Tradeoffs**
 
@@ -44,15 +44,19 @@
 
 **a. How you used AI**
 
-- I used Claude Code in VS Code at every stage so far. It drafted the Mermaid UML from my four classes and generated the dataclass skeleton. After it reviewed the skeleton for missing relationships, it wrote the full implementation, the `main.py` demo, the first two tests, and the docstrings.
-- The most helpful prompts were review questions about my own code, like "does this skeleton have missing relationships or logic bottlenecks?" and "how should the Scheduler retrieve all tasks from the Owner's pets?" They found real gaps: weekly tasks had no completion date, and tasks didn't know which pet they belonged to. A general "write the code" prompt wouldn't have caught those.
+- I used Claude Code in VS Code for the whole project. In the early phases it drafted the Mermaid UML and the class skeleton, reviewed the skeleton, and then wrote the implementation, the `main.py` demo and the first tests. In the later phases it added sorting, filtering, recurrence and conflict warnings, grew the test suite from 2 tests to 42, connected everything to the Streamlit UI, and helped write this file and the README.
+- The most useful feature was that the agent could change several files in one step and then run the code itself. Recurrence touched `pawpal_system.py`, `main.py`, the tests, the app and the README at once. After each change it ran `main.py` and `python -m pytest`, and it also ran the Streamlit app headless to click through marking a task complete. That's how it caught its own mistake when a test it wrote failed on the first run.
+- The other useful habit was asking review questions about my own code instead of just asking for code, like "does this skeleton have missing relationships?" and "how could this algorithm be simplified?" Those found real gaps, such as weekly tasks having no completion date.
+- On separate chat sessions: I started this session by asking what I'd done in my last one, and the assistant rebuilt it from the git history. After that, Phases 3, 4 and 5 ran in the same chat. What kept things organized was committing at the end of each phase with a clear message (`feat: implement sorting, filtering, and conflict detection`, `test: add automated test suite for PawPal+ system`), so each phase has a clean boundary in git even without a new chat. A fresh chat per phase would have kept the context smaller and stopped earlier decisions from carrying over without me noticing, so for the next project I'd start a new chat at each phase.
 
 **b. Judgment and verification**
 
-- **What AI suggested:** In the skeleton, the Scheduler passed `(Pet, Task)` pairs around so it could tell which pet each task belonged to. The assignment says the Scheduler must read from the Owner's `get_all_tasks()` method, which returns plain tasks. So I changed the design: `Pet.add_task()` stamps each task with a `pet_name`, and the Scheduler reads only from `get_all_tasks()`.
+- **A suggestion I modified:** In the skeleton, the Scheduler passed `(Pet, Task)` pairs around so it could tell which pet each task belonged to. The assignment says the Scheduler reads from `Owner.get_all_tasks()`, which returns plain tasks, so I changed the design. `Pet.add_task()` stamps each task with a `pet_name`, and the Scheduler reads only from `get_all_tasks()`.
+- **A suggestion I rejected:** When I asked how to simplify `detect_conflicts()`, the AI suggested `itertools.combinations`. It's shorter and more "Pythonic", but it hides the early `break` that makes the overlap rule clear, so I kept my loop (see 2b).
 - **What I accepted:** I kept the AI's two-step scheduling approach, which first picks tasks by priority within the time budget and then places them by time. I also kept its rename of `title` to `description` to match the spec.
-- **What I rejected or left for later:** The review pointed out that `remove_task()` is ambiguous when two tasks share a description. I left that alone for now because it doesn't affect scheduling.
-- **How I verified it:** I ran `main.py` with two pets and six tasks and checked each line by hand. Every task fit inside the 90-minute budget. The 08:15 meds task moved to 08:30 because the walk was still running, and the conflict warning flagged that overlap. The low-priority weekly brushing was skipped because there wasn't enough time left. I also ran `python -m pytest`, and both the task-completion and task-addition tests passed.
+- **What I left for later:** `remove_task()` removes only the first task with a matching description, so duplicate descriptions are ambiguous. It doesn't affect scheduling, so I left it.
+- **Where the AI got it wrong:** One of its tests expected the wrong task to be skipped. It also committed the `.coverage` data file by accident, and its first attempt to ignore that file broke `.gitignore` by gluing two entries onto one line. All three were caught by checking the output (the failing test, `git status` and `git check-ignore`) rather than trusting the summary.
+- **How I verified it:** All 42 tests pass and cover every line of `pawpal_system.py`. I also traced the README's example workflow through the real classes to confirm each start time it claims, and ran the app myself in the browser.
 
 ---
 
@@ -76,12 +80,14 @@
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+- I'm most satisfied that the schedule explains itself. Every task has a reason next to it, like "preferred 08:15 but moved to avoid overlap", and conflicts show up as warnings that say what will happen and how to fix it instead of crashing. Keeping all the logic in `pawpal_system.py` also paid off: the app, the terminal demo and the tests all use the same methods, so testing the logic once covers all three.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+- I'd fix tasks that run past midnight, which currently get start times like `24:20`. I'd also try a selection step that fills the available time better while still putting high priority first.
+- The app can add pets and tasks but can't edit or delete them, and everything resets when the page reloads, so I'd add editing and save the data to a file.
+- I'd use the owner's `preferences` list, which exists but does nothing yet, and give tasks unique IDs so `remove_task()` isn't ambiguous.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+- Being the lead architect meant deciding the rules and checking the results while the AI did most of the typing. The AI was fast, and it was just as confident when it was wrong, as with the failing test and the broken `.gitignore`. The parts that made this project mine were the constraints I set (the Scheduler only reads through `get_all_tasks()`), the tradeoffs I chose (priority over a full schedule, a readable loop over a shorter one), and the habit of running the code before accepting a change.

@@ -1,0 +1,66 @@
+classDiagram
+    %% PawPal+ final design, matching pawpal_system.py.
+    %% Phase 1 draft: diagrams/uml.mmd
+
+    class Owner {
+        +str name
+        +int available_minutes
+        +str day_start
+        +list~str~ preferences
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +remove_pet(pet_name: str) bool
+        +get_pet(pet_name: str) Optional~Pet~
+        +get_all_tasks() list~Task~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +int age
+        +str notes
+        +list~Task~ tasks
+        +add_task(task: Task) None
+        +remove_task(description: str) bool
+        +get_pending_tasks(today: date) list~Task~
+    }
+
+    class Task {
+        <<dataclass>>
+        +str description
+        +int duration_minutes
+        +str priority
+        +str frequency
+        +Optional~str~ time
+        +str category
+        +bool completed
+        +Optional~date~ last_completed
+        +str pet_name
+        +Optional~date~ due_date
+        +mark_complete(on: date) None
+        +priority_rank() int
+        +is_due_today(today: date) bool
+        +next_occurrence() Optional~Task~
+    }
+
+    class Scheduler {
+        +Owner owner
+        +date today
+        +list~tuple~ plan
+        +list~tuple~ skipped
+        +collect_tasks() list~Task~
+        +sort_by_time(tasks) list~Task~
+        +sort_by_priority(tasks) list~Task~
+        +filter_tasks(pet_name, completed, tasks) list~Task~
+        +mark_task_complete(task: Task) Optional~Task~
+        +generate_plan() list~tuple~
+        +detect_conflicts() list~str~
+        +explain_plan() str
+    }
+
+    Owner "1" o-- "0..*" Pet : has
+    Pet "1" *-- "0..*" Task : needs
+    Scheduler --> Owner : reads tasks via get_all_tasks()
+    Scheduler ..> Pet : adds next occurrence via get_pet()
+    Scheduler ..> Task : sorts, filters, plans, completes
+    Task ..> Task : next_occurrence() copies with new due_date
