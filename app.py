@@ -99,25 +99,70 @@ else:
                 except ValueError as err:
                     st.error(str(err))
 
-    all_tasks = owner.get_all_tasks()
-    if all_tasks:
+    scheduler = Scheduler(owner)
+
+    # --- Mark complete (recurring tasks get their next copy automatically) ---
+    due_now = scheduler.sort_by_time(scheduler.collect_tasks())
+    if due_now:
+        col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
+        with col1:
+            labels = [
+                f"{t.pet_name}: {t.description} ({t.time or 'flexible'}, {t.frequency})"
+                for t in due_now
+            ]
+            pick = st.selectbox("Mark a task complete", labels)
+        with col2:
+            if st.button("Complete", use_container_width=True):
+                done = due_now[labels.index(pick)]
+                next_task = scheduler.mark_task_complete(done)
+                st.session_state.flash = (
+                    f"Completed '{done.description}' for {done.pet_name}. "
+                    + (f"Next {done.frequency} copy is due {next_task.due_date:%a %b %d}."
+                       if next_task else "One-time task, so it won't repeat.")
+                )
+                st.rerun()
+    if "flash" in st.session_state:
+        st.success(st.session_state.pop("flash"))
+
+    # --- Filter and sort the task list ---
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        pet_filter = st.selectbox("Show pet", ["All pets"] + [p.name for p in owner.pets])
+    with col2:
+        status_filter = st.selectbox("Status", ["All", "Not done", "Done"])
+    with col3:
+        sort_by = st.selectbox("Sort by", ["Time", "Priority"])
+
+    shown = scheduler.filter_tasks(
+        pet_name=None if pet_filter == "All pets" else pet_filter,
+        completed={"All": None, "Not done": False, "Done": True}[status_filter],
+    )
+    shown = scheduler.sort_by_time(shown) if sort_by == "Time" else scheduler.sort_by_priority(shown)
+
+    if shown:
         st.table(
             [
                 {
+                    "Time": t.time or "flexible",
                     "Pet": t.pet_name,
                     "Task": t.description,
                     "Min": t.duration_minutes,
                     "Priority": t.priority,
                     "Frequency": t.frequency,
-                    "Time": t.time or "flexible",
                     "Status": "done" if t.completed
-                    else "due" if t.is_due_today() else f"next due {t.due_date}",
+                    else "due" if t.is_due_today() else f"next due {t.due_date:%a %b %d}",
                 }
-                for t in all_tasks
+                for t in shown
             ]
         )
+    elif owner.get_all_tasks():
+        st.info("No tasks match these filters.")
     else:
         st.info("No tasks yet. Add one above.")
+
+    # --- Conflicts: shown live, so the owner sees clashes before planning ---
+    for warning in scheduler.detect_conflicts():
+        st.warning(f"⚠️ Time conflict: {warning}. The schedule will move the later task.")
 
 st.divider()
 
@@ -142,5 +187,3 @@ if st.button("Generate schedule", type="primary"):
 
     for task, reason in scheduler.skipped:
         st.warning(f"Skipped **{task.description}** ({task.pet_name}): {reason}")
-    for warning in scheduler.detect_conflicts():
-        st.error(f"Conflict: {warning}")
