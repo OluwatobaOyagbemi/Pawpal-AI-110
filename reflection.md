@@ -10,12 +10,12 @@
 2. **Add and manage care tasks.** The user adds tasks for a pet, such as a walk, feeding, meds or grooming. Each task has a duration and a priority, and can have a preferred time and a frequency (daily or weekly). Tasks can be marked complete or removed.
 3. **Generate and view today's plan.** The user asks for a daily schedule. The app picks the tasks that fit in the available time, puts them in order with start times, and explains why each task was included or left out.
 
-**UML design.** The diagram (`diagrams/uml.mmd`) has four classes. An Owner has many Pets, each Pet has many Tasks, and a Scheduler takes an Owner and builds the plan from all of that owner's pets' tasks.
+**UML design.** The diagram (`diagrams/uml.mmd`) has four classes. An Owner has many Pets, each Pet has many Tasks, and a Scheduler takes an Owner and builds the plan from every task returned by `Owner.get_all_tasks()`.
 
-- **Task** (dataclass) holds one care activity: title, category, duration, priority, frequency, optional preferred time, and whether it's done. It can mark itself complete, turn its priority into a number for sorting, and say whether it's due today.
-- **Pet** (dataclass) holds the pet's details and its list of tasks. It can add or remove tasks and return the ones still pending.
-- **Owner** (dataclass) holds the owner's name, daily time budget, day start time, preferences and pets. It can add, remove or find pets, and collect every task across all of them.
-- **Scheduler** holds the scheduling logic. It gathers due tasks, sorts them by priority, fits them into the owner's time budget with start times, flags overlapping time slots, and explains the plan. I kept this logic out of Owner and Pet so the data classes stay simple and the scheduling rules live in one place I can test.
+- **Task** (dataclass) holds one care activity: `description`, `duration_minutes`, `priority`, `frequency` (daily, weekly or once), an optional `time` ("HH:MM"), `category`, `completed`, `last_completed`, and `pet_name`. It can mark itself complete, turn its priority into a number for sorting, and say whether it's due today.
+- **Pet** (dataclass) holds the pet's `name`, `species`, `age`, `notes` and its list of `tasks`. When it adds a task, it stamps the task with its `pet_name`. It can also remove a task by description and return the tasks still pending today.
+- **Owner** (dataclass) holds the owner's `name`, `available_minutes`, `day_start`, `preferences` and `pets`. It can add, remove or find pets, and `get_all_tasks()` returns every pet's tasks together.
+- **Scheduler** holds the scheduling logic. It gets tasks only through `Owner.get_all_tasks()`, so it works across all pets. It keeps the ones due today, sorts them by priority, fits them into the owner's time budget with start times, flags overlapping time slots, and explains the plan. I kept this logic out of Owner and Pet so the data classes stay simple and the scheduling rules live in one place I can test.
 
 **b. Design changes**
 
